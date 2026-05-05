@@ -30,11 +30,10 @@ online_users = {}
 AVAILABLE_AVATARS = ["😎", "🦊", "🐱", "🐶", "🦁", "🐼", "🐨", "🐸", "🦄", "🐙", "👾", "🤖", "👻", "💀", "👽", "🎃", "🌟", "🔥", "💎", "🍀"]
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
-# Секретные данные владельца
 SPECIAL_USER_ID = "cedrpawlsofficial"
 SPECIAL_USERNAME = "CedrPawls"
 SPECIAL_AVATAR = "⭐"
-SPECIAL_SECRET_KEY = "CedrPawls2026!"  # Секретный ключ для активации владельца
+SPECIAL_SECRET_KEY = "CedrPawls2026!"
 
 
 def allowed_file(filename):
@@ -59,10 +58,6 @@ def get_avatar_url(user_id):
         if os.path.exists(avatar_path):
             return f"/uploads/avatars/{user_id}.{ext}"
     return None
-
-
-def is_special_user(user_id):
-    return user_id == SPECIAL_USER_ID
 
 
 def get_display_name(user):
@@ -95,20 +90,15 @@ def register():
     if not password or len(password) < 4:
         return jsonify({'error': 'Пароль должен быть минимум 4 символа'}), 400
 
-    # Проверка спец. регистрации
     if special_id == SPECIAL_USER_ID:
-        # Требуем секретный ключ
         if secret_key != SPECIAL_SECRET_KEY:
             return jsonify({'error': 'Неверный секретный ключ владельца'}), 403
-        
         if SPECIAL_USER_ID in users:
             return jsonify({'error': 'Аккаунт владельца уже создан'}), 400
-        
         user_id = SPECIAL_USER_ID
         username = SPECIAL_USERNAME
         avatar = SPECIAL_AVATAR
     else:
-        # Обычная регистрация
         for u in users.values():
             if u['username'].lower() == username.lower():
                 return jsonify({'error': 'Имя уже занято'}), 400
@@ -117,7 +107,7 @@ def register():
     users[user_id] = {
         'username': username,
         'password_hash': hash_password(password),
-        'avatar': avatar if avatar in AVAILABLE_AVATARS or avatar == SPECIAL_AVATAR else '😎',
+        'avatar': avatar,
         'custom_avatar': False,
         'bio': '',
         'friends': [],
@@ -128,7 +118,8 @@ def register():
     return jsonify({
         'user_id': user_id,
         'username': username,
-        'avatar': users[user_id]['avatar'],
+        'avatar': avatar,
+        'is_owner': (user_id == SPECIAL_USER_ID),
         'message': 'Регистрация успешна!'
     })
 
@@ -154,17 +145,13 @@ def login():
     if users[user_id]['password_hash'] != hash_password(password):
         return jsonify({'error': 'Неверный пароль'}), 401
 
-    avatar = users[user_id]['avatar']
-    custom_avatar_url = get_avatar_url(user_id)
-    is_owner = users[user_id].get('is_owner', False)
-
     return jsonify({
         'user_id': user_id,
         'username': users[user_id]['username'],
-        'avatar': avatar,
-        'custom_avatar_url': custom_avatar_url,
+        'avatar': users[user_id]['avatar'],
+        'custom_avatar_url': get_avatar_url(user_id),
         'bio': users[user_id]['bio'],
-        'is_owner': is_owner
+        'is_owner': users[user_id].get('is_owner', False)
     })
 
 
@@ -183,17 +170,13 @@ def login_by_id():
     if users[user_id]['password_hash'] != hash_password(password):
         return jsonify({'error': 'Неверный пароль'}), 401
 
-    avatar = users[user_id]['avatar']
-    custom_avatar_url = get_avatar_url(user_id)
-    is_owner = users[user_id].get('is_owner', False)
-
     return jsonify({
         'user_id': user_id,
         'username': users[user_id]['username'],
-        'avatar': avatar,
-        'custom_avatar_url': custom_avatar_url,
+        'avatar': users[user_id]['avatar'],
+        'custom_avatar_url': get_avatar_url(user_id),
         'bio': users[user_id]['bio'],
-        'is_owner': is_owner
+        'is_owner': users[user_id].get('is_owner', False)
     })
 
 
@@ -212,12 +195,11 @@ def update_profile():
     if bio is not None and len(bio) <= 100:
         users[user_id]['bio'] = bio
 
-    custom_avatar_url = get_avatar_url(user_id)
-
     return jsonify({
         'avatar': users[user_id]['avatar'],
-        'custom_avatar_url': custom_avatar_url,
+        'custom_avatar_url': get_avatar_url(user_id),
         'bio': users[user_id]['bio'],
+        'is_owner': users[user_id].get('is_owner', False),
         'message': 'Профиль обновлён'
     })
 
@@ -291,10 +273,9 @@ def upload_file():
         size_str = f"{file_size / (1024 * 1024):.1f} MB"
 
     room = get_chat_room(user_id, friend_id)
-    sender_name = get_display_name(users[user_id])
     msg = {
         'sender_id': user_id,
-        'sender_name': sender_name,
+        'sender_name': get_display_name(users[user_id]),
         'type': 'file',
         'file_url': file_url,
         'file_name': original_filename,
@@ -302,12 +283,11 @@ def upload_file():
         'timestamp': datetime.now().strftime('%H:%M')
     }
     messages[room].append(msg)
-
     socketio.emit('new_message', msg, room=room)
 
     if friend_id in online_users:
         socketio.emit('notification', {
-            'from': sender_name,
+            'from': get_display_name(users[user_id]),
             'message': f'📎 Файл: {original_filename}',
             'friend_id': user_id
         }, room=online_users[friend_id])
@@ -315,40 +295,18 @@ def upload_file():
     return jsonify({'file_url': file_url, 'file_name': original_filename, 'file_size': size_str})
 
 
-@app.route('/api/user/<user_id>', methods=['GET'])
-def get_user(user_id):
-    if user_id not in users:
-        return jsonify({'error': 'Не найден'}), 404
-    u = users[user_id]
-    custom_avatar_url = get_avatar_url(user_id)
-    return jsonify({
-        'id': user_id,
-        'username': u['username'],
-        'display_name': get_display_name(u),
-        'avatar': u['avatar'],
-        'custom_avatar_url': custom_avatar_url,
-        'bio': u['bio'],
-        'status': 'online' if user_id in online_users else 'offline',
-        'created_at': u['created_at'],
-        'is_owner': u.get('is_owner', False)
-    })
-
-
 @app.route('/api/users', methods=['GET'])
 def get_users():
     users_list = []
     for uid, u in users.items():
-        custom_avatar_url = get_avatar_url(uid)
         is_owner = u.get('is_owner', False)
-        # Скрываем реальный ID владельца от всех
-        display_id = "****" if is_owner else uid
         users_list.append({
             'id': uid,
-            'display_id': display_id,
+            'display_id': '****' if is_owner else uid,
             'username': u['username'],
             'display_name': get_display_name(u),
             'avatar': u['avatar'],
-            'custom_avatar_url': custom_avatar_url,
+            'custom_avatar_url': get_avatar_url(uid),
             'bio': u['bio'],
             'status': 'online' if uid in online_users else 'offline',
             'is_owner': is_owner
@@ -407,10 +365,9 @@ def handle_message(data):
         return
 
     room = get_chat_room(user_id, friend_id)
-    sender_name = get_display_name(users[user_id])
     msg = {
         'sender_id': user_id,
-        'sender_name': sender_name,
+        'sender_name': get_display_name(users[user_id]),
         'type': 'text',
         'message': text,
         'timestamp': datetime.now().strftime('%H:%M')
@@ -423,7 +380,7 @@ def handle_message(data):
 
     if friend_id in online_users:
         emit('notification', {
-            'from': sender_name,
+            'from': get_display_name(users[user_id]),
             'message': text[:60],
             'friend_id': user_id
         }, room=online_users[friend_id])
@@ -447,20 +404,17 @@ def handle_add_friend(data):
     users[user_id]['friends'].append(friend_id)
     users[friend_id]['friends'].append(user_id)
 
-    friend_name = get_display_name(users[friend_id])
-    user_name = get_display_name(users[user_id])
-
     emit('friend_added', {
         'success': True,
-        'message': f'{friend_name} добавлен!',
-        'friend': {'id': friend_id, 'username': users[friend_id]['username'], 'avatar': users[friend_id]['avatar'], 'display_name': friend_name}
+        'message': f'{get_display_name(users[friend_id])} добавлен!',
+        'friend': {'id': friend_id, 'username': users[friend_id]['username'], 'display_name': get_display_name(users[friend_id])}
     })
 
     if friend_id in online_users:
         emit('friend_added', {
             'success': True,
-            'message': f'{user_name} добавил вас в друзья',
-            'friend': {'id': user_id, 'username': users[user_id]['username'], 'avatar': users[user_id]['avatar'], 'display_name': user_name}
+            'message': f'{get_display_name(users[user_id])} добавил вас в друзья',
+            'friend': {'id': user_id, 'username': users[user_id]['username'], 'display_name': get_display_name(users[user_id])}
         }, room=online_users[friend_id])
 
 
