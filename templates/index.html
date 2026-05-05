@@ -26,9 +26,9 @@
         .form input:focus { border-color: rgba(0,119,255,0.5); }
         .btn { padding: 12px; background: rgba(0,119,255,0.25); color: #fff; border: none; border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s; font-family: 'Inter', sans-serif; }
         .btn:hover { background: rgba(0,119,255,0.45); }
-        .msg { margin-top: 10px; font-size: 12px; text-align: center; min-height: 20px; }
-        .msg .error { color: #FF4D6A; }
-        .msg .success { color: #4ADE80; }
+        .msg-box { margin-top: 10px; font-size: 12px; text-align: center; min-height: 20px; }
+        .msg-box .error { color: #FF4D6A; }
+        .msg-box .success { color: #4ADE80; }
         .avatar-picker { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 8px; }
         .avatar-option { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; background: rgba(255,255,255,0.05); transition: 0.2s; border: 2px solid transparent; }
         .avatar-option:hover, .avatar-option.selected { background: rgba(0,119,255,0.3); border-color: rgba(0,119,255,0.6); }
@@ -42,7 +42,7 @@
         .header .avatar img { width: 100%; height: 100%; object-fit: cover; }
         .header .name { font-size: 14px; font-weight: 600; }
         .header .uid { font-size: 10px; color: #6B6A75; }
-        .header .owner-star { color: #FFD700; font-size: 18px; }
+        .header .owner-star { color: #FFD700; font-size: 18px; margin-left: 4px; }
         .header .logout-btn { background: rgba(255,255,255,0.05); border: none; color: #6B6A75; width: 32px; height: 32px; border-radius: 10px; cursor: pointer; font-size: 14px; flex-shrink: 0; }
         .add-area { padding: 10px 18px; position: relative; }
         .add-area input { width: 100%; height: 44px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 0 44px 0 14px; color: #fff; font-size: 13px; outline: none; }
@@ -140,7 +140,7 @@
             <p class="special-hint">⭐ Владелец: ID + секретный ключ</p>
             <button class="btn" onclick="doRegister()">Создать аккаунт</button>
         </div>
-        <div class="msg" id="login-msg"></div>
+        <div class="msg-box" id="login-msg"></div>
     </div>
 
     <!-- ГЛАВНЫЙ ЭКРАН -->
@@ -149,10 +149,9 @@
             <div class="user-info" onclick="openProfile()">
                 <div class="avatar" id="my-avatar-display">😎</div>
                 <div>
-                    <div class="name" id="my-name-display"></div>
+                    <div class="name"><span id="my-name-display"></span><span class="owner-star hidden" id="owner-star-header">⭐</span></div>
                     <div class="uid">ID: <span id="my-id-display"></span></div>
                 </div>
-                <span class="owner-star hidden" id="owner-star-header">⭐</span>
             </div>
             <button class="logout-btn" onclick="doLogout()" title="Выйти">↩</button>
         </div>
@@ -160,7 +159,7 @@
             <input type="text" id="add-friend-input" placeholder="Введите ID друга">
             <button class="add-btn" onclick="doAddFriend()">+</button>
         </div>
-        <div class="msg" id="add-friend-msg" style="padding:0 18px;"></div>
+        <div class="msg-box" id="add-friend-msg" style="padding:0 18px;"></div>
         <div class="friends-list">
             <div class="section-title">Все пользователи</div>
             <div id="friends-list"></div>
@@ -235,7 +234,14 @@
                     body: JSON.stringify({user_id: auth.userId, password: auth.password})
                 }).then(r => r.json()).then(d => {
                     if (d.user_id) {
-                        myUser = {id: d.user_id, username: d.username, display_name: d.display_name || d.username, avatar: d.avatar, bio: d.bio || '', is_owner: d.is_owner || false};
+                        myUser = {
+                            id: d.user_id,
+                            username: d.username,
+                            display_name: d.display_name || d.username,
+                            avatar: d.avatar,
+                            bio: d.bio || '',
+                            is_owner: d.is_owner || false
+                        };
                         myCustomAvatarUrl = d.custom_avatar_url || null;
                         connectSocket(d.user_id);
                     }
@@ -279,8 +285,14 @@
     function updateOwnerUI() {
         const star = document.getElementById('owner-star-header');
         const badge = document.getElementById('owner-badge-display');
-        if (myUser && myUser.is_owner) { star.classList.remove('hidden'); badge.classList.remove('hidden'); }
-        else { star.classList.add('hidden'); badge.classList.add('hidden'); }
+        // Показываем ТОЛЬКО если is_owner === true
+        if (myUser && myUser.is_owner === true) {
+            star.classList.remove('hidden');
+            badge.classList.remove('hidden');
+        } else {
+            star.classList.add('hidden');
+            badge.classList.add('hidden');
+        }
     }
 
     async function doRegister() {
@@ -309,7 +321,6 @@
                 document.getElementById('login-user').value = name;
                 document.getElementById('login-pass').value = pass;
                 localStorage.setItem('messenger_auth', JSON.stringify({userId: data.user_id, password: pass}));
-                setTimeout(() => alert(`Ваш ID: ${data.user_id}`), 500);
             } else {
                 showLoginMsg(data.error || 'Ошибка','error');
             }
@@ -327,7 +338,14 @@
             });
             const data = await res.json();
             if (res.ok) {
-                myUser = {id: data.user_id, username: data.username, display_name: data.display_name || data.username, avatar: data.avatar, bio: data.bio || '', is_owner: data.is_owner || false};
+                myUser = {
+                    id: data.user_id,
+                    username: data.username,
+                    display_name: data.display_name || data.username,
+                    avatar: data.avatar,
+                    bio: data.bio || '',
+                    is_owner: data.is_owner || false
+                };
                 myCustomAvatarUrl = data.custom_avatar_url || null;
                 localStorage.setItem('messenger_auth', JSON.stringify({userId: data.user_id, password: pass}));
                 connectSocket(data.user_id);
@@ -387,10 +405,10 @@
         if (allUsers.length === 0) { c.innerHTML = '<div style="color:#4A4955;text-align:center;padding:20px;">Никого нет</div>'; return; }
         c.innerHTML = allUsers.map(u => {
             const avatarHtml = u.custom_avatar_url ? `<img src="${u.custom_avatar_url}" alt="avatar">` : u.avatar || '😎';
-            const isOwner = u.is_owner ? ' owner-item' : '';
+            const isOwnerClass = u.is_owner ? ' owner-item' : '';
             const ownerStar = u.is_owner ? ' ⭐' : '';
             const displayId = u.is_owner ? '****' : (u.display_id || u.id);
-            return `<div class="friend-item${isOwner}${currentFriend&&currentFriend.id===u.id?' active':''}" onclick="openChat('${u.id}')">
+            return `<div class="friend-item${isOwnerClass}${currentFriend&&currentFriend.id===u.id?' active':''}" onclick="openChat('${u.id}')">
                 <div class="fav">${avatarHtml}</div>
                 <div class="info">
                     <div class="fname">${u.display_name || u.username}${ownerStar}</div>
@@ -502,11 +520,18 @@
     async function saveProfile() {
         const bio = document.getElementById('profile-bio').value.trim();
         try {
-            await fetch('/api/update-profile', {
+            const res = await fetch('/api/update-profile', {
                 method:'POST', headers:{'Content-Type':'application/json'},
                 body: JSON.stringify({user_id: myUser.id, avatar: myCustomAvatarUrl ? myUser.avatar : myUser.avatar, bio: bio})
             });
-            myUser.bio = bio; updateMyAvatarDisplay(); showToast('Профиль обновлён!'); closeProfile(); loadAllUsers();
+            const data = await res.json();
+            myUser.bio = data.bio;
+            myUser.is_owner = data.is_owner || false;
+            updateMyAvatarDisplay();
+            updateOwnerUI();
+            showToast('Профиль обновлён!');
+            closeProfile();
+            loadAllUsers();
         } catch(e) { showToast('Ошибка сохранения'); }
     }
 </script>
