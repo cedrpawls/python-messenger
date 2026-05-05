@@ -11,6 +11,588 @@
         body { font-family: 'Inter', sans-serif; background: #131217; height: 100vh; display: flex; justify-content: center; align-items: center; color: #fff; }
         .container { width: 452px; height: 571px; background: #1D1C26; border-radius: 24px; position: relative; overflow: hidden; box-shadow: 0 25px 80px rgba(0,0,0,0.5); }
 
+        /* Экран входа */
+        .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; z-index: 10; background: #1D1C26; transition: opacity 0.3s, visibility 0.3s; }
+        .screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .screen .icon { font-size: 48px; margin-bottom: 16px; }
+        .screen h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+        .screen .sub { font-size: 13px; color: #6B6A75; margin-bottom: 24px; }
+        .tabs { display: flex; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 4px; margin-bottom: 20px; width: 100%; max-width: 280px; }
+        .tab { flex: 1; padding: 10px; border: none; background: transparent; color: #6B6A75; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 10px; transition: 0.3s; font-family: 'Inter', sans-serif; }
+        .tab.active { background: rgba(0,119,255,0.3); color: #fff; }
+        .form { width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 10px; display: none; }
+        .form.active { display: flex; }
+        .form input { padding: 12px 14px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; font-size: 14px; color: #fff; outline: none; font-family: 'Inter', sans-serif; }
+        .form input::placeholder { color: #4A4955; }
+        .form input:focus { border-color: rgba(0,119,255,0.5); }
+        .btn { padding: 12px; background: rgba(0,119,255,0.25); color: #fff; border: none; border-radius: 14px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s; font-family: 'Inter', sans-serif; }
+        .btn:hover { background: rgba(0,119,255,0.45); }
+        .msg { margin-top: 10px; font-size: 12px; text-align: center; min-height: 20px; }
+        .msg .error { color: #FF4D6A; }
+        .msg .success { color: #4ADE80; }
+        .avatar-picker { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 8px; }
+        .avatar-option { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; background: rgba(255,255,255,0.05); transition: 0.2s; border: 2px solid transparent; }
+        .avatar-option:hover, .avatar-option.selected { background: rgba(0,119,255,0.3); border-color: rgba(0,119,255,0.6); }
+        .special-hint { font-size: 10px; color: #FFD700; text-align: center; margin-top: -4px; }
+
+        /* Главный экран */
+        .main-screen { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 5; transition: opacity 0.3s; }
+        .main-screen.hidden { opacity: 0; pointer-events: none; }
+        .header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .header .user-info { display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1; }
+        .header .avatar { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: rgba(0,119,255,0.2); overflow: hidden; flex-shrink: 0; }
+        .header .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .header .name { font-size: 14px; font-weight: 600; }
+        .header .uid { font-size: 10px; color: #6B6A75; }
+        .header .owner-star { color: #FFD700; font-size: 18px; }
+        .header .logout-btn { background: rgba(255,255,255,0.05); border: none; color: #6B6A75; width: 32px; height: 32px; border-radius: 10px; cursor: pointer; font-size: 14px; flex-shrink: 0; }
+        .add-area { padding: 10px 18px; position: relative; }
+        .add-area input { width: 100%; height: 44px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 0 44px 0 14px; color: #fff; font-size: 13px; outline: none; }
+        .add-area input::placeholder { color: #4A4955; }
+        .add-area .add-btn { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; background: rgba(0,119,255,0.25); border: none; border-radius: 10px; color: #fff; cursor: pointer; font-size: 16px; }
+        .friends-list { flex: 1; overflow-y: auto; padding: 6px 18px; }
+        .friends-list .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #4A4955; margin-bottom: 8px; padding-left: 4px; }
+        .friend-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(23,28,130,0.12); border-radius: 14px; margin-bottom: 6px; cursor: pointer; transition: 0.2s; }
+        .friend-item:hover, .friend-item.active { background: rgba(0,119,255,0.2); }
+        .friend-item.owner-item { border: 1px solid rgba(255,215,0,0.2); background: rgba(255,215,0,0.05); }
+        .friend-item .fav { font-size: 22px; width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+        .friend-item .fav img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+        .friend-item .info { flex: 1; min-width: 0; }
+        .friend-item .fname { font-size: 13px; font-weight: 500; }
+        .friend-item .fstatus { font-size: 10px; color: #6B6A75; }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .status-dot.online { background: #4ADE80; box-shadow: 0 0 6px rgba(74,222,128,0.5); }
+        .status-dot.offline { background: #3A3945; }
+
+        /* Чат */
+        .chat-screen { position: absolute; inset: 0; background: #1D1C26; z-index: 20; display: flex; flex-direction: column; transition: transform 0.3s; }
+        .chat-screen.hidden { transform: translateX(100%); pointer-events: none; }
+        .chat-h { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .chat-h .back { background: rgba(255,255,255,0.05); border: none; color: #fff; width: 30px; height: 30px; border-radius: 10px; cursor: pointer; font-size: 14px; }
+        .chat-h .cname { font-size: 14px; font-weight: 600; flex: 1; }
+        .chat-msgs { flex: 1; padding: 12px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background: rgba(0,0,0,0.1); }
+        .msg-row { display: flex; flex-direction: column; max-width: 80%; }
+        .msg-row.mine { align-self: flex-end; align-items: flex-end; }
+        .msg-row.theirs { align-self: flex-start; align-items: flex-start; }
+        .bubble { padding: 8px 12px; border-radius: 16px; font-size: 13px; line-height: 1.4; }
+        .msg-row.mine .bubble { background: rgba(0,119,255,0.3); border-bottom-right-radius: 4px; }
+        .msg-row.theirs .bubble { background: rgba(23,28,130,0.3); border-bottom-left-radius: 4px; }
+        .msg-time { font-size: 9px; color: #4A4955; margin-top: 2px; padding: 0 4px; }
+        .msg-sender { font-size: 10px; color: #6B6A75; margin-bottom: 2px; padding: 0 4px; }
+        .empty-chat { text-align: center; color: #4A4955; font-size: 12px; margin: auto; }
+        .file-bubble { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 14px; background: rgba(255,255,255,0.08); cursor: pointer; }
+        .file-bubble .file-icon { font-size: 24px; }
+        .file-bubble .file-info { display: flex; flex-direction: column; }
+        .file-bubble .file-name { font-size: 12px; font-weight: 500; word-break: break-all; }
+        .file-bubble .file-size { font-size: 10px; color: #6B6A75; }
+        .msg-row.mine .file-bubble { background: rgba(0,119,255,0.3); }
+        .chat-input-area { padding: 10px 16px 14px; display: flex; gap: 8px; align-items: center; }
+        .chat-input-area input { flex: 1; height: 40px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 0 14px; color: #fff; font-size: 13px; outline: none; }
+        .chat-input-area .send { width: 40px; height: 40px; background: rgba(0,119,255,0.25); border: none; border-radius: 14px; color: #fff; cursor: pointer; font-size: 16px; }
+        .chat-input-area .attach { width: 40px; height: 40px; background: rgba(255,255,255,0.05); border: none; border-radius: 14px; color: #fff; cursor: pointer; font-size: 18px; }
+
+        /* Профиль */
+        .profile-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 30; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+        .profile-overlay.hidden { display: none; }
+        .profile-card { background: #1D1C26; border-radius: 20px; padding: 24px; width: 300px; text-align: center; }
+        .profile-card .big-avatar { width: 80px; height: 80px; border-radius: 20px; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 40px; background: rgba(0,119,255,0.2); cursor: pointer; overflow: hidden; position: relative; }
+        .profile-card .big-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-card .big-avatar .overlay-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); opacity: 0; transition: 0.2s; font-size: 12px; border-radius: 20px; }
+        .profile-card .big-avatar:hover .overlay-text { opacity: 1; }
+        .profile-card .avatar-select { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; max-height: 80px; overflow-y: auto; margin: 8px 0; }
+        .profile-card .avatar-select span { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; border-radius: 8px; }
+        .profile-card .avatar-select span:hover { background: rgba(0,119,255,0.3); }
+        .profile-card .avatar-select span.sel { background: rgba(0,119,255,0.5); }
+        .profile-card textarea { width: 100%; height: 50px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #fff; padding: 8px; font-size: 12px; resize: none; outline: none; font-family: 'Inter', sans-serif; margin: 8px 0; }
+        .profile-card .btn-row { display: flex; gap: 8px; }
+        .profile-card .btn-row button { flex: 1; padding: 8px; border-radius: 10px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .btn-save { background: rgba(0,119,255,0.3); color: #fff; }
+        .btn-close { background: rgba(255,255,255,0.08); color: #fff; }
+        .btn-upload { background: rgba(74,222,128,0.3); color: #fff; padding: 6px 12px; border-radius: 8px; border: none; cursor: pointer; font-size: 11px; margin-top: 4px; }
+        .owner-badge { display: inline-block; background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-top: 4px; }
+
+        .toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #2A2936; color: #fff; padding: 10px 18px; border-radius: 12px; font-size: 12px; z-index: 100; animation: slideDown 0.3s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+        #file-input, #avatar-input { display: none; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <!-- ЭКРАН ВХОДА -->
+    <div class="screen" id="login-screen">
+        <div class="icon">💬</div>
+        <h1>Мессенджер</h1>
+        <p class="sub">Войдите или создайте аккаунт</p>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('login')">Вход</button>
+            <button class="tab" onclick="switchTab('register')">Регистрация</button>
+        </div>
+        <div class="form active" id="form-login">
+            <input type="text" id="login-user" placeholder="Имя пользователя">
+            <input type="password" id="login-pass" placeholder="Пароль">
+            <button class="btn" onclick="doLogin()">Войти</button>
+        </div>
+        <div class="form" id="form-register">
+            <div class="avatar-picker" id="reg-avatars"></div>
+            <input type="text" id="reg-user" placeholder="Имя пользователя">
+            <input type="password" id="reg-pass" placeholder="Пароль (мин. 4 символа)">
+            <input type="text" id="reg-special-id" placeholder="Спец. ID (если есть)" style="font-size:11px;">
+            <p class="special-hint">⭐ Владелец: введите cedrpawlsofficial</p>
+            <button class="btn" onclick="doRegister()">Создать аккаунт</button>
+        </div>
+        <div class="msg" id="login-msg"></div>
+    </div>
+
+    <!-- ГЛАВНЫЙ ЭКРАН -->
+    <div class="main-screen hidden" id="main-screen">
+        <div class="header">
+            <div class="user-info" onclick="openProfile()">
+                <div class="avatar" id="my-avatar-display">😎</div>
+                <div>
+                    <div class="name" id="my-name-display"></div>
+                    <div class="uid">ID: <span id="my-id-display"></span></div>
+                </div>
+                <span class="owner-star hidden" id="owner-star-header">⭐</span>
+            </div>
+            <button class="logout-btn" onclick="doLogout()" title="Выйти">↩</button>
+        </div>
+        <div class="add-area">
+            <input type="text" id="add-friend-input" placeholder="Введите ID друга">
+            <button class="add-btn" onclick="doAddFriend()">+</button>
+        </div>
+        <div class="msg" id="add-friend-msg" style="padding:0 18px;"></div>
+        <div class="friends-list" id="friends-list-container">
+            <div class="section-title">Все пользователи</div>
+            <div id="friends-list"></div>
+        </div>
+    </div>
+
+    <!-- ЧАТ -->
+    <div class="chat-screen hidden" id="chat-screen">
+        <div class="chat-h">
+            <button class="back" onclick="closeChat()">←</button>
+            <div class="cname" id="chat-friend-name"></div>
+        </div>
+        <div class="chat-msgs" id="chat-messages"><div class="empty-chat">Нет сообщений</div></div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Сообщение..." onkeydown="if(event.key==='Enter')sendMsg()">
+            <button class="attach" onclick="document.getElementById('file-input').click()">📎</button>
+            <input type="file" id="file-input" onchange="sendFile()" style="display:none;">
+            <button class="send" onclick="sendMsg()">➤</button>
+        </div>
+    </div>
+
+    <!-- ПРОФИЛЬ -->
+    <div class="profile-overlay hidden" id="profile-overlay" onclick="if(event.target===this)closeProfile()">
+        <div class="profile-card">
+            <div class="big-avatar" id="profile-avatar" onclick="document.getElementById('avatar-input').click()">
+                <span id="profile-avatar-emoji">😎</span>
+                <div class="overlay-text">Сменить</div>
+            </div>
+            <input type="file" id="avatar-input" accept="image/*" onchange="uploadAvatar()" style="display:none;">
+            <button class="btn-upload" onclick="document.getElementById('avatar-input').click()">📷 Загрузить фото</button>
+            <div class="avatar-select" id="avatar-select"></div>
+            <p id="profile-name-display" style="font-size:16px;font-weight:600;margin:8px 0;"></p>
+            <span id="owner-badge-display" class="owner-badge hidden">⭐ Владелец</span>
+            <textarea id="profile-bio" placeholder="О себе..."></textarea>
+            <div class="btn-row">
+                <button class="btn-save" onclick="saveProfile()">Сохранить</button>
+                <button class="btn-close" onclick="closeProfile()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let socket = null;
+    let myUser = null;  // {id, username, display_name, avatar, bio, is_owner}
+    let currentFriend = null;
+    let allUsers = [];
+    let myCustomAvatarUrl = null;
+    const AVATARS = ["😎","🦊","🐱","🐶","🦁","🐼","🐨","🐸","🦄","🐙","👾","🤖","👻","💀","👽","🎃","🌟","🔥","💎","🍀"];
+    let selectedRegAvatar = '😎';
+
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', () => {
+        const picker = document.getElementById('reg-avatars');
+        AVATARS.forEach(a => {
+            const span = document.createElement('span');
+            span.className = 'avatar-option' + (a === selectedRegAvatar ? ' selected' : '');
+            span.textContent = a;
+            span.onclick = () => {
+                document.querySelectorAll('#reg-avatars .avatar-option').forEach(s => s.classList.remove('selected'));
+                span.classList.add('selected');
+                selectedRegAvatar = a;
+            };
+            picker.appendChild(span);
+        });
+
+        // Автовход
+        const saved = localStorage.getItem('messenger_auth');
+        if (saved) {
+            try {
+                const auth = JSON.parse(saved);
+                fetch('/api/login-by-id', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({user_id: auth.userId, password: auth.password})
+                }).then(r => r.json()).then(d => {
+                    if (d.user_id) {
+                        myUser = {
+                            id: d.user_id,
+                            username: d.username,
+                            display_name: d.display_name || d.username,
+                            avatar: d.avatar,
+                            bio: d.bio || '',
+                            is_owner: d.is_owner || false
+                        };
+                        myCustomAvatarUrl = d.custom_avatar_url || null;
+                        connectSocket(d.user_id);
+                    }
+                }).catch(() => {});
+            } catch(e) {}
+        }
+    });
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('form-login').classList.toggle('active', tab === 'login');
+        document.getElementById('form-register').classList.toggle('active', tab === 'register');
+        document.getElementById('login-msg').innerHTML = '';
+    }
+
+    function showLoginMsg(text, type) {
+        const el = document.getElementById('login-msg');
+        el.innerHTML = `<span class="${type}">${text}</span>`;
+        setTimeout(() => el.innerHTML = '', 4000);
+    }
+
+    function showToast(text) {
+        const t = document.createElement('div'); t.className = 'toast'; t.textContent = text;
+        document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+    }
+
+    function updateMyAvatarDisplay() {
+        const display = document.getElementById('my-avatar-display');
+        const profileEl = document.getElementById('profile-avatar');
+        if (myCustomAvatarUrl) {
+            display.innerHTML = `<img src="${myCustomAvatarUrl}" alt="avatar">`;
+            profileEl.innerHTML = `<img src="${myCustomAvatarUrl}" alt="avatar"><div class="overlay-text">Сменить</div>`;
+        } else {
+            display.textContent = myUser.avatar;
+            profileEl.innerHTML = `<span id="profile-avatar-emoji">${myUser.avatar}</span><div class="overlay-text">Сменить</div>`;
+        }
+        // Обновить имя в профиле
+        document.getElementById('profile-name-display').textContent = myUser.display_name || myUser.username;
+    }
+
+    function updateOwnerUI() {
+        const star = document.getElementById('owner-star-header');
+        const badge = document.getElementById('owner-badge-display');
+        if (myUser && myUser.is_owner) {
+            star.classList.remove('hidden');
+            badge.classList.remove('hidden');
+        } else {
+            star.classList.add('hidden');
+            badge.classList.add('hidden');
+        }
+    }
+
+    async function doRegister() {
+        const name = document.getElementById('reg-user').value.trim();
+        const pass = document.getElementById('reg-pass').value.trim();
+        const specialId = document.getElementById('reg-special-id').value.trim();
+
+        if (!name || name.length < 3) { showLoginMsg('Имя: минимум 3 символа','error'); return; }
+        if (!pass || pass.length < 4) { showLoginMsg('Пароль: минимум 4 символа','error'); return; }
+
+        try {
+            const res = await fetch('/api/register', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    username: name,
+                    password: pass,
+                    avatar: selectedRegAvatar,
+                    special_id: specialId
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showLoginMsg(`Готово! Ваш ID: ${data.user_id}`, 'success');
+                document.getElementById('login-user').value = name;
+                document.getElementById('login-pass').value = pass;
+                localStorage.setItem('messenger_auth', JSON.stringify({userId: data.user_id, password: pass}));
+                if (specialId === 'cedrpawlsofficial') {
+                    setTimeout(() => alert(`✅ Вы зарегистрированы как ⭐ CedrPawls!\nВаш ID: ${data.user_id}`), 500);
+                } else {
+                    setTimeout(() => alert(`Ваш ID: ${data.user_id}`), 500);
+                }
+            } else {
+                showLoginMsg(data.error || 'Ошибка','error');
+            }
+        } catch(e) { showLoginMsg('Сервер недоступен','error'); }
+    }
+
+    async function doLogin() {
+        const name = document.getElementById('login-user').value.trim();
+        const pass = document.getElementById('login-pass').value.trim();
+        if (!name || !pass) { showLoginMsg('Заполните все поля','error'); return; }
+        try {
+            const res = await fetch('/api/login', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({username: name, password: pass})
+            });
+            const data = await res.json();
+            if (res.ok) {
+                myUser = {
+                    id: data.user_id,
+                    username: data.username,
+                    display_name: data.display_name || data.username,
+                    avatar: data.avatar,
+                    bio: data.bio || '',
+                    is_owner: data.is_owner || false
+                };
+                myCustomAvatarUrl = data.custom_avatar_url || null;
+                localStorage.setItem('messenger_auth', JSON.stringify({userId: data.user_id, password: pass}));
+                connectSocket(data.user_id);
+            } else {
+                showLoginMsg(data.error || 'Ошибка входа','error');
+            }
+        } catch(e) { showLoginMsg('Сервер недоступен','error'); }
+    }
+
+    function doLogout() {
+        localStorage.removeItem('messenger_auth');
+        if (socket) socket.disconnect();
+        socket = null; myUser = null; currentFriend = null; allUsers = []; myCustomAvatarUrl = null;
+        document.getElementById('login-screen').classList.remove('hidden');
+        document.getElementById('main-screen').classList.add('hidden');
+        document.getElementById('chat-screen').classList.add('hidden');
+    }
+
+    function connectSocket(userId) {
+        if (socket) socket.disconnect();
+        socket = io(window.location.origin, {query: {user_id: userId}, transports: ['websocket','polling']});
+
+        socket.on('connect', () => {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-screen').classList.remove('hidden');
+            document.getElementById('my-id-display').textContent = myUser.id;
+            document.getElementById('my-name-display').textContent = myUser.display_name || myUser.username;
+            updateMyAvatarDisplay();
+            updateOwnerUI();
+            loadAllUsers();
+        });
+
+        socket.on('disconnect', () => showToast('Соединение потеряно'));
+        socket.on('status_update', (d) => {
+            const u = allUsers.find(x => x.id === d.user_id);
+            if (u) u.status = d.status;
+            renderFriends();
+        });
+        socket.on('friend_added', (d) => {
+            const el = document.getElementById('add-friend-msg');
+            el.innerHTML = `<span class="${d.success?'success':'error'}">${d.message}</span>`;
+            setTimeout(() => el.innerHTML = '', 3000);
+            if (d.success) loadAllUsers();
+        });
+        socket.on('chat_history', (h) => renderChatHistory(h));
+        socket.on('new_message', (d) => {
+            if (currentFriend && (d.sender_id === currentFriend.id || d.sender_id === myUser.id)) appendBubble(d);
+        });
+        socket.on('notification', (d) => showToast(`📩 ${d.from}: ${d.message}`));
+    }
+
+    async function loadAllUsers() {
+        try {
+            const res = await fetch('/api/users');
+            const users = await res.json();
+            allUsers = users.filter(u => u.id !== myUser.id).map(u => ({
+                ...u,
+                display_name: u.display_name || u.username,
+                custom_avatar_url: u.custom_avatar_url || null
+            }));
+            renderFriends();
+        } catch(e) {}
+    }
+
+    function renderFriends() {
+        const c = document.getElementById('friends-list');
+        if (allUsers.length === 0) {
+            c.innerHTML = '<div style="color:#4A4955;text-align:center;padding:20px;">Никого нет</div>';
+            return;
+        }
+        c.innerHTML = allUsers.map(u => {
+            const avatarHtml = u.custom_avatar_url
+                ? `<img src="${u.custom_avatar_url}" alt="avatar">`
+                : u.avatar || '😎';
+            const isOwner = u.is_owner ? ' owner-item' : '';
+            const ownerStar = u.is_owner ? ' ⭐' : '';
+            return `
+            <div class="friend-item${isOwner}${currentFriend&&currentFriend.id===u.id?' active':''}" onclick="openChat('${u.id}')">
+                <div class="fav">${avatarHtml}</div>
+                <div class="info">
+                    <div class="fname">${u.display_name || u.username}${ownerStar}</div>
+                    <div class="fstatus">${u.status==='online'?'В сети':'Не в сети'}</div>
+                </div>
+                <div class="status-dot ${u.status==='online'?'online':'offline'}"></div>
+            </div>`;
+        }).join('');
+    }
+
+    function doAddFriend() {
+        const fid = document.getElementById('add-friend-input').value.trim();
+        if (!fid) return;
+        if (socket && socket.connected) socket.emit('add_friend', {user_id: myUser.id, friend_id: fid});
+        document.getElementById('add-friend-input').value = '';
+    }
+
+    function openChat(fid) {
+        const f = allUsers.find(u => u.id === fid);
+        if (!f) return;
+        currentFriend = f;
+        document.getElementById('chat-friend-name').textContent = f.display_name || f.username;
+        document.getElementById('chat-screen').classList.remove('hidden');
+        document.getElementById('chat-messages').innerHTML = '<div class="empty-chat">Загрузка...</div>';
+        if (socket && socket.connected) socket.emit('join_chat', {user_id: myUser.id, friend_id: fid});
+        renderFriends();
+    }
+
+    function closeChat() {
+        currentFriend = null;
+        document.getElementById('chat-screen').classList.add('hidden');
+        renderFriends();
+    }
+
+    function renderChatHistory(h) {
+        const c = document.getElementById('chat-messages');
+        c.innerHTML = '';
+        if (!h || h.length === 0) { c.innerHTML = '<div class="empty-chat">Нет сообщений</div>'; return; }
+        h.forEach(m => appendBubble(m));
+        c.scrollTop = c.scrollHeight;
+    }
+
+    function appendBubble(d) {
+        const c = document.getElementById('chat-messages');
+        const emp = c.querySelector('.empty-chat'); if (emp) emp.remove();
+        const row = document.createElement('div');
+        row.className = 'msg-row ' + (d.sender_id === myUser.id ? 'mine' : 'theirs');
+
+        if (d.type === 'file') {
+            if (d.sender_id !== myUser.id) {
+                const s = document.createElement('div'); s.className = 'msg-sender'; s.textContent = d.sender_name; row.appendChild(s);
+            }
+            const fb = document.createElement('div');
+            fb.className = 'file-bubble';
+            fb.onclick = () => window.open(d.file_url, '_blank');
+            const ext = d.file_name.split('.').pop().toLowerCase();
+            const icons = {png:'🖼️',jpg:'🖼️',jpeg:'🖼️',gif:'🎞️',webp:'🖼️',pdf:'📄',doc:'📝',docx:'📝',zip:'📦',rar:'📦',mp4:'🎬',mp3:'🎵',mov:'🎬'};
+            fb.innerHTML = `<div class="file-icon">${icons[ext] || '📎'}</div><div class="file-info"><div class="file-name">${d.file_name}</div><div class="file-size">${d.file_size}</div></div>`;
+            row.appendChild(fb);
+        } else {
+            if (d.sender_id !== myUser.id) {
+                const s = document.createElement('div'); s.className = 'msg-sender'; s.textContent = d.sender_name; row.appendChild(s);
+            }
+            const b = document.createElement('div'); b.className = 'bubble'; b.textContent = d.message; row.appendChild(b);
+        }
+
+        const t = document.createElement('div'); t.className = 'msg-time'; t.textContent = d.timestamp; row.appendChild(t);
+        c.appendChild(row); c.scrollTop = c.scrollHeight;
+    }
+
+    function sendMsg() {
+        const inp = document.getElementById('chat-input');
+        const txt = inp.value.trim();
+        if (!txt || !currentFriend || !socket || !socket.connected) return;
+        socket.emit('send_message', {user_id: myUser.id, friend_id: currentFriend.id, message: txt});
+        inp.value = ''; inp.focus();
+    }
+
+    async function sendFile() {
+        const fileInput = document.getElementById('file-input');
+        const file = fileInput.files[0];
+        if (!file || !currentFriend || !myUser) { fileInput.value = ''; return; }
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('user_id', myUser.id);
+        formData.append('friend_id', currentFriend.id);
+        try { await fetch('/api/upload-file', { method: 'POST', body: formData }); } catch(e) { showToast('Ошибка отправки'); }
+        fileInput.value = '';
+    }
+
+    // ПРОФИЛЬ
+    function openProfile() {
+        document.getElementById('profile-overlay').classList.remove('hidden');
+        updateMyAvatarDisplay();
+        updateOwnerUI();
+        document.getElementById('profile-bio').value = myUser.bio || '';
+        const sel = document.getElementById('avatar-select');
+        sel.innerHTML = '';
+        AVATARS.forEach(a => {
+            const s = document.createElement('span');
+            s.textContent = a; s.className = a === myUser.avatar && !myCustomAvatarUrl ? 'sel' : '';
+            s.onclick = () => {
+                document.querySelectorAll('#avatar-select span').forEach(x => x.classList.remove('sel'));
+                s.classList.add('sel');
+                myUser.avatar = a;
+                myCustomAvatarUrl = null;
+                updateMyAvatarDisplay();
+            };
+            sel.appendChild(s);
+        });
+    }
+
+    function closeProfile() { document.getElementById('profile-overlay').classList.add('hidden'); }
+
+    async function uploadAvatar() {
+        const fileInput = document.getElementById('avatar-input');
+        const file = fileInput.files[0];
+        if (!file || !myUser) { fileInput.value = ''; return; }
+        const formData = new FormData();
+        formData.append('avatar', file);
+        formData.append('user_id', myUser.id);
+        try {
+            const res = await fetch('/api/upload-avatar', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (res.ok) { myCustomAvatarUrl = data.avatar_url; updateMyAvatarDisplay(); showToast('Аватар обновлён!'); }
+            else { showToast(data.error || 'Ошибка'); }
+        } catch(e) { showToast('Ошибка загрузки'); }
+        fileInput.value = '';
+    }
+
+    async function saveProfile() {
+        const bio = document.getElementById('profile-bio').value.trim();
+        try {
+            await fetch('/api/update-profile', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({user_id: myUser.id, avatar: myCustomAvatarUrl ? myUser.avatar : myUser.avatar, bio: bio})
+            });
+            myUser.bio = bio;
+            updateMyAvatarDisplay();
+            showToast('Профиль обновлён!');
+            closeProfile();
+            loadAllUsers();
+        } catch(e) { showToast('Ошибка сохранения'); }
+    }
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messenger</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #131217; height: 100vh; display: flex; justify-content: center; align-items: center; color: #fff; }
+        .container { width: 452px; height: 571px; background: #1D1C26; border-radius: 24px; position: relative; overflow: hidden; box-shadow: 0 25px 80px rgba(0,0,0,0.5); }
+
         /* Экраны */
         .screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; z-index: 10; background: #1D1C26; transition: opacity 0.3s, visibility 0.3s; }
         .screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
