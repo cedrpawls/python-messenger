@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Python Messenger</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -397,7 +397,7 @@
         <!-- Боковая панель -->
         <div class="sidebar hidden" id="sidebar">
             <div class="user-info">
-                <h3 id="username-display"></h3>
+                <h3 id="username-display">Пользователь</h3>
                 <div class="user-id">ID: <span id="user-id-display"></span></div>
             </div>
             
@@ -409,7 +409,7 @@
             
             <div class="friends-list" id="friends-list">
                 <div style="text-align: center; color: #999; padding: 20px;">
-                    У вас пока нет друзей
+                    Загрузка пользователей...
                 </div>
             </div>
         </div>
@@ -450,6 +450,13 @@
             document.getElementById('message').innerHTML = '';
         }
         
+        // Показать сообщение
+        function showMessage(text, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.innerHTML = `<div class="${type}">${text}</div>`;
+            setTimeout(() => msgDiv.innerHTML = '', 5000);
+        }
+        
         // Регистрация
         async function register() {
             const username = document.getElementById('register-username').value.trim();
@@ -485,7 +492,8 @@
                     showMessage(data.error || 'Ошибка регистрации', 'error');
                 }
             } catch (error) {
-                showMessage('Сервер недоступен', 'error');
+                showMessage('Сервер недоступен. Попробуйте позже.', 'error');
+                console.error('Registration error:', error);
             }
         }
         
@@ -503,62 +511,76 @@
         
         // Инициализация WebSocket
         function initializeSocket(userId) {
-            socket = io(window.location.origin, {
-                query: {user_id: userId}
-            });
+            console.log('Connecting with user ID:', userId);
             
-            socket.on('connect', () => {
-                currentUser = {id: userId};
+            try {
+                socket = io(window.location.origin, {
+                    query: {user_id: userId},
+                    transports: ['websocket', 'polling']
+                });
                 
-                // Скрыть экран входа, показать интерфейс
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('sidebar').classList.remove('hidden');
-                document.getElementById('chat-area').classList.remove('hidden');
-                
-                document.getElementById('user-id-display').textContent = userId;
-                
-                loadUsers();
-            });
-            
-            socket.on('chat_history', (history) => {
-                displayChatHistory(history);
-            });
-            
-            socket.on('new_message', (data) => {
-                if (currentFriend && (data.sender_id === currentFriend.id || data.sender_id === currentUser.id)) {
-                    appendMessage(data);
-                }
-            });
-            
-            socket.on('notification', (data) => {
-                showNotification(`📨 ${data.from}: ${data.message}`);
-            });
-            
-            socket.on('friend_added', (data) => {
-                const msgDiv = document.getElementById('add-friend-message');
-                if (data.success) {
-                    msgDiv.innerHTML = `<div class="success">✓ ${data.message}</div>`;
+                socket.on('connect', () => {
+                    console.log('Connected to server!');
+                    currentUser = {id: userId};
+                    
+                    // Скрыть экран входа, показать интерфейс
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('sidebar').classList.remove('hidden');
+                    document.getElementById('chat-area').classList.remove('hidden');
+                    
+                    document.getElementById('user-id-display').textContent = userId;
+                    
                     loadUsers();
-                } else {
-                    msgDiv.innerHTML = `<div class="error">✗ ${data.message}</div>`;
-                }
-                setTimeout(() => msgDiv.innerHTML = '', 3000);
-            });
-            
-            socket.on('status_update', (data) => {
-                updateFriendStatus(data.user_id, data.status);
-            });
-            
-            socket.on('disconnect', () => {
-                showMessage('Соединение потеряно', 'error');
-            });
-        }
-        
-        // Показать сообщение
-        function showMessage(text, type) {
-            const msgDiv = document.getElementById('message');
-            msgDiv.innerHTML = `<div class="${type}">${text}</div>`;
-            setTimeout(() => msgDiv.innerHTML = '', 3000);
+                });
+                
+                socket.on('connect_error', (error) => {
+                    console.error('Connection error:', error);
+                    showMessage('Ошибка подключения: ' + error.message, 'error');
+                });
+                
+                socket.on('chat_history', (history) => {
+                    console.log('Chat history received:', history);
+                    displayChatHistory(history);
+                });
+                
+                socket.on('new_message', (data) => {
+                    console.log('New message:', data);
+                    if (currentFriend && (data.sender_id === currentFriend.id || data.sender_id === currentUser.id)) {
+                        appendMessage(data);
+                    }
+                });
+                
+                socket.on('notification', (data) => {
+                    console.log('Notification:', data);
+                    showNotification(`📨 ${data.from}: ${data.message}`);
+                });
+                
+                socket.on('friend_added', (data) => {
+                    console.log('Friend added:', data);
+                    const msgDiv = document.getElementById('add-friend-message');
+                    if (data.success) {
+                        msgDiv.innerHTML = `<div class="success">✓ ${data.message}</div>`;
+                        loadUsers();
+                    } else {
+                        msgDiv.innerHTML = `<div class="error">✗ ${data.message}</div>`;
+                    }
+                    setTimeout(() => msgDiv.innerHTML = '', 3000);
+                });
+                
+                socket.on('status_update', (data) => {
+                    console.log('Status update:', data);
+                    updateFriendStatus(data.user_id, data.status);
+                });
+                
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from server');
+                    showMessage('Соединение потеряно. Перезагрузите страницу.', 'error');
+                });
+                
+            } catch (error) {
+                console.error('Socket initialization error:', error);
+                showMessage('Не удалось подключиться к серверу', 'error');
+            }
         }
         
         // Уведомление
@@ -568,25 +590,35 @@
             notification.textContent = text;
             document.body.appendChild(notification);
             
-            setTimeout(() => notification.remove(), 3000);
+            setTimeout(() => notification.remove(), 4000);
         }
         
         // Загрузка списка пользователей
         async function loadUsers() {
             try {
+                console.log('Loading users...');
                 const response = await fetch('/api/users');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const users = await response.json();
+                console.log('Users loaded:', users);
                 
                 friends = users.filter(u => u.id !== currentUser.id);
-                displayFriends();
                 
-                // Обновить имя пользователя
+                // Обновить имя текущего пользователя
                 const currentUserData = users.find(u => u.id === currentUser.id);
                 if (currentUserData) {
                     document.getElementById('username-display').textContent = currentUserData.username;
                 }
+                
+                displayFriends();
             } catch (error) {
-                console.error('Ошибка загрузки пользователей:', error);
+                console.error('Error loading users:', error);
+                document.getElementById('friends-list').innerHTML = 
+                    '<div style="text-align: center; color: #999; padding: 20px;">Не удалось загрузить пользователей</div>';
             }
         }
         
@@ -595,7 +627,7 @@
             const friendsList = document.getElementById('friends-list');
             
             if (friends.length === 0) {
-                friendsList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">Нет других пользователей</div>';
+                friendsList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">Нет других пользователей. Пригласите друзей!</div>';
                 return;
             }
             
@@ -625,12 +657,13 @@
         
         // Открыть чат
         function openChat(friendId, friendName) {
+            console.log('Opening chat with:', friendId, friendName);
             currentFriend = {id: friendId, name: friendName};
             
             document.getElementById('chat-friend-name').textContent = friendName;
-            document.getElementById('chat-messages').innerHTML = '';
+            document.getElementById('chat-messages').innerHTML = '<div class="empty-chat">Загрузка сообщений...</div>';
             
-            if (socket) {
+            if (socket && socket.connected) {
                 socket.emit('join_chat', {
                     user_id: currentUser.id,
                     friend_id: friendId
@@ -645,7 +678,7 @@
             const messagesDiv = document.getElementById('chat-messages');
             messagesDiv.innerHTML = '';
             
-            if (history.length === 0) {
+            if (!history || history.length === 0) {
                 messagesDiv.innerHTML = '<div class="empty-chat">Нет сообщений. Начните общение!</div>';
                 return;
             }
@@ -695,7 +728,14 @@
             const input = document.getElementById('message-input');
             const message = input.value.trim();
             
-            if (!message || !currentFriend || !socket) return;
+            if (!message || !currentFriend || !socket || !socket.connected) {
+                if (!socket || !socket.connected) {
+                    showMessage('Нет подключения к серверу', 'error');
+                }
+                return;
+            }
+            
+            console.log('Sending message to:', currentFriend.id, message);
             
             socket.emit('send_message', {
                 user_id: currentUser.id,
@@ -720,23 +760,37 @@
             
             if (!friendId) {
                 document.getElementById('add-friend-message').innerHTML = '<div class="error">Введите ID друга</div>';
+                setTimeout(() => {
+                    document.getElementById('add-friend-message').innerHTML = '';
+                }, 3000);
                 return;
             }
             
             if (friendId === currentUser.id) {
                 document.getElementById('add-friend-message').innerHTML = '<div class="error">Нельзя добавить себя</div>';
+                setTimeout(() => {
+                    document.getElementById('add-friend-message').innerHTML = '';
+                }, 3000);
                 return;
             }
             
-            if (socket) {
+            if (socket && socket.connected) {
+                console.log('Adding friend:', friendId);
                 socket.emit('add_friend', {
                     user_id: currentUser.id,
                     friend_id: friendId
                 });
+            } else {
+                document.getElementById('add-friend-message').innerHTML = '<div class="error">Нет подключения</div>';
             }
             
             document.getElementById('friend-id-input').value = '';
         }
+        
+        // Переподключение при проблемах
+        window.addEventListener('load', () => {
+            console.log('Page loaded, ready for connections');
+        });
     </script>
 </body>
 </html>
