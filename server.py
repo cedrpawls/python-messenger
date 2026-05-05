@@ -30,10 +30,11 @@ online_users = {}
 AVAILABLE_AVATARS = ["😎", "🦊", "🐱", "🐶", "🦁", "🐼", "🐨", "🐸", "🦄", "🐙", "👾", "🤖", "👻", "💀", "👽", "🎃", "🌟", "🔥", "💎", "🍀"]
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
-# Специальный аккаунт — ваш ID и ник
+# Секретные данные владельца
 SPECIAL_USER_ID = "cedrpawlsofficial"
 SPECIAL_USERNAME = "CedrPawls"
-SPECIAL_AVATAR = "⭐"  # Звёздочка как аватарка по умолчанию
+SPECIAL_AVATAR = "⭐"
+SPECIAL_SECRET_KEY = "CedrPawls2026!"  # Секретный ключ для активации владельца
 
 
 def allowed_file(filename):
@@ -61,13 +62,11 @@ def get_avatar_url(user_id):
 
 
 def is_special_user(user_id):
-    """Проверка, является ли пользователь владельцем"""
     return user_id == SPECIAL_USER_ID
 
 
 def get_display_name(user):
-    """Возвращает имя со звёздочкой для владельца"""
-    if is_special_user(user.get('special_id', '')) or user.get('username') == SPECIAL_USERNAME:
+    if user.get('is_owner', False):
         return f"⭐ {user['username']}"
     return user['username']
 
@@ -88,21 +87,26 @@ def register():
     username = data.get('username', '').strip()
     password = data.get('password', '').strip()
     avatar = data.get('avatar', '😎')
-    special_id = data.get('special_id', '').strip()  # Спец. ID для создания особого аккаунта
+    special_id = data.get('special_id', '').strip()
+    secret_key = data.get('secret_key', '').strip()
 
     if not username or len(username) < 3:
         return jsonify({'error': 'Имя должно быть минимум 3 символа'}), 400
     if not password or len(password) < 4:
         return jsonify({'error': 'Пароль должен быть минимум 4 символа'}), 400
 
-    # Проверка: если передан спец. ID
+    # Проверка спец. регистрации
     if special_id == SPECIAL_USER_ID:
-        # Проверяем, не занят ли уже этот спец. ID
+        # Требуем секретный ключ
+        if secret_key != SPECIAL_SECRET_KEY:
+            return jsonify({'error': 'Неверный секретный ключ владельца'}), 403
+        
         if SPECIAL_USER_ID in users:
-            return jsonify({'error': 'Этот специальный ID уже используется'}), 400
+            return jsonify({'error': 'Аккаунт владельца уже создан'}), 400
+        
         user_id = SPECIAL_USER_ID
-        username = SPECIAL_USERNAME  # Принудительно ставим ваш ник
-        avatar = SPECIAL_AVATAR  # Принудительно ставим звёздочку
+        username = SPECIAL_USERNAME
+        avatar = SPECIAL_AVATAR
     else:
         # Обычная регистрация
         for u in users.values():
@@ -335,15 +339,19 @@ def get_users():
     users_list = []
     for uid, u in users.items():
         custom_avatar_url = get_avatar_url(uid)
+        is_owner = u.get('is_owner', False)
+        # Скрываем реальный ID владельца от всех
+        display_id = "****" if is_owner else uid
         users_list.append({
             'id': uid,
+            'display_id': display_id,
             'username': u['username'],
             'display_name': get_display_name(u),
             'avatar': u['avatar'],
             'custom_avatar_url': custom_avatar_url,
             'bio': u['bio'],
             'status': 'online' if uid in online_users else 'offline',
-            'is_owner': u.get('is_owner', False)
+            'is_owner': is_owner
         })
     return jsonify(users_list)
 
